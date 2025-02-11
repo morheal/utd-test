@@ -47,6 +47,9 @@ REDIS_PORT=6379
 ```sh
 docker-compose up -d
 ```
+
+2. Create database via pgAdmin at http://localhost:5050 and connect it to application in .env file
+
 Now you can access api endpoints at http://localhost:3000
 Access the API Swagger documentation at http://localhost:3000/api.
 

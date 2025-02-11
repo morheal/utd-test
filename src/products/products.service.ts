@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -17,11 +17,8 @@ export class ProductsService {
   ) {}
 
   async fetchProducts(skip: number = 0, limit: number = 30) {
-    console.log('requesting products with limit:', limit, 'skip:', skip);
     const response = await axios.get(`https://dummyjson.com/products?limit=${limit}&skip=${skip}`);
     const products = response.data.products;
-
-    console.log(response.data.products.length)
 
     await this.productRepository.save(products);
 
@@ -38,8 +35,6 @@ export class ProductsService {
         this.removeAll();
       
         const initRequest: any = await this.fetchProducts()
-        console.log("TOTAL: ",initRequest.total);
-        console.log(initRequest);
         
         for (let i = 30; i < initRequest.total; i += 30) {
           if( i + 30 > initRequest.total) {
@@ -60,7 +55,6 @@ export class ProductsService {
   }
 
   async addFetchProductsJob(data: { skip: number; limit: number }) {
-    console.log('add job to queue limit:', data.limit, 'skip:', data.skip);
     await this.productsQueue.add('fetchProducts', data);
   }
 
@@ -77,16 +71,15 @@ export class ProductsService {
     return query.getMany();
   }
 
-  findOne(id: number) {
-    return this.productRepository.findOneBy({id});
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async findOne(id: number) {
+    const product = await this.productRepository.findOneBy({ id });
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+    return product;
   }
 
   removeAll() {
-    console.log('delete all products');
     return this.productRepository.clear();
   }
 }
